@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
-from .models import ToDoList, Item
+from .models import Currency
 import requests
 import json
 import xmltodict
@@ -8,8 +8,8 @@ from xml.etree import ElementTree
 # Create your views here.
 
 
-def index(response, id):
-    ls = ToDoList.objects.get(id=id)
+def index(response):
+    # ls = ToDoList.objects.get(id=id)
     return render(response, "main/base.html")
 
 def home(response):
@@ -28,12 +28,16 @@ def api_data_view(request):
 
     currencies = {}
 
-    # Find the desired currency rates
+    Currency.objects.all().delete()
+    #  Save currency rates to the database
     for cube in root.iter('{http://www.bnr.ro/xsd}Rate'):
         currency = cube.attrib.get('currency')
         rate = cube.text
-        currencies[currency] = rate
+        
+        current_currency = Currency(currency=currency, rate=rate)
+        current_currency.save()
 
+    # Retrieve currency items from the database
+    currencies = Currency.objects.values('currency', 'rate')
 
-    
-    return JsonResponse(currencies, safe=False)
+    return JsonResponse(list(currencies), safe=False)
